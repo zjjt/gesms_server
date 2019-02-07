@@ -1,0 +1,12 @@
+app:
+  image: gesms_server
+  ports:
+    - "97:4000"   
+  links:
+    - postgresql
+  restart: always
+postgresql:
+  image: postgres
+  ports:
+    - "5432:5432" 
+  restart: always
