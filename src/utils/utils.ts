@@ -12,3 +12,7 @@ export async function parseStringSync(str : any) {
     });
     return await body;
 }
+
+export async function wait(ms:number){
+    return new Promise((resolve,reject)=>setTimeout(resolve,ms));
+}

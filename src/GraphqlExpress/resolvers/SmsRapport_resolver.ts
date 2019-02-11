@@ -13,6 +13,8 @@ export class SmsResolver {
     @Mutation(returns => [SmsRapport])
     async sendSmsMutation(@Arg("data")sms : SmsRapport_Inputs) {
         let res=await sendSMS(sms.typeSms,undefined,{id:sms.senderId,direction:sms.direction},sms.messages,sms.expeditor);
+        console.log("resultat d'envoi\n");
+        console.dir(res);
         return res;
     }
 }
