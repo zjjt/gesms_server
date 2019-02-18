@@ -35,7 +35,7 @@ apiRouter
                 let r=await sendSMS(typeEnvoi,undefined,{id:user.id,direction:user.direction},composition?[composition]:smsArray,expeditor);
                 console.log("resultat d'envoi\n");
                 console.dir(r);
-                res.status(200).json({result:"Les sms sont bien parti"});
+                res.status(200).json({result:"Les sms sont bien partis"});
             }
         }else{
             res.status(500).json({error:"please fill out the body of the request"});

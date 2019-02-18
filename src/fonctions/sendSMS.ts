@@ -174,7 +174,7 @@ function traiTment(e:any,i:any,ok:any,expeditor:any,typeSMS:any,userRepository:a
         let p=new Promise((resolve,reject)=>{
             setTimeout(async ()=>{
                 console.dir(e.sms);
-                console.log("reponse en json");
+                console.log("reponse en json reel");
                 let heureEnvoi= moment().format("HH:mm");
                 let res = await smsApi(expeditor?expeditor:"NSIA VIE CI", moment().format("YYYYMMDDHHmmss"), false, false, false, [e.number], e.sms);
                 
