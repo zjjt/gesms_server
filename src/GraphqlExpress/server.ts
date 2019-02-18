@@ -7,6 +7,7 @@ import {genSchema} from './graphqlSchema';
 import {Launcher} from '../fonctions/LauncherScheduler';
 import * as scheduler from "node-schedule";
 import * as bodyParser from 'body-parser';
+const http=require('http');
 // import {processRequest} from "graphql-upload"; import {apolloUploadExpress}
 // from 'graphql-upload';
 
@@ -16,6 +17,9 @@ export const startServer = async() => {
     //console.dir(schema);
     const server = new ApolloServer({
         schema: schema,
+        subscriptions:{
+            path:"/subscriptions"
+        }
         /*context: async({req} : any) => ({
             redis,
             url: req.protocol + "://" + req.get("host"),
@@ -36,7 +40,9 @@ export const startServer = async() => {
     //app.use(apolloUploadExpress({maxFileSize: 10000000, maxFiles: 2}));
     server.applyMiddleware({app, cors: corsOptions});
     await makeDBconnexion();
-    const expressApp = await app.listen({
+    const httpServer=http.createServer(app);
+    server.installSubscriptionHandlers(httpServer);
+    const expressApp = await httpServer.listen({
         port: process.env.NODE_ENV === "test"
             ? 4005
             : 4000
@@ -53,10 +59,10 @@ export const startServer = async() => {
             : 4000,
         server
     };
-
+//console.log(server);
     scheduler.scheduleJob("launcher", "*/1 * * * *", async() => {
         return await Launcher();
     })
-    console.log(scheduler.scheduledJobs)
+   // console.log(scheduler.scheduledJobs)
     return App;
 };
