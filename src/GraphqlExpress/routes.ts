@@ -26,7 +26,7 @@ apiRouter
             const isValidPassword=password===user!.textPassword?true:false;
             if(!user||!isValidPassword){
                 res.status(400).json({error:"authentication failed"});
-            }else if(!/^\d+$/.test(telephone)|| telephone.length<8){
+            }else if(telephone &&(!/^\d+$/.test(telephone)|| telephone.length<8)){
                 res.status(500).json({error:"wrong phone number entered"});
             }else{
                 let composition=null;
