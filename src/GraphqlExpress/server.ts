@@ -7,6 +7,10 @@ import {genSchema} from './graphqlSchema';
 import {Launcher} from '../fonctions/LauncherScheduler';
 import * as scheduler from "node-schedule";
 import * as bodyParser from 'body-parser';
+/*import * as session from 'express-session';
+import * as connectRedis from 'connect-redis';
+import {redis} from './redis';*/
+
 const http=require('http');
 // import {processRequest} from "graphql-upload"; import {apolloUploadExpress}
 // from 'graphql-upload';
@@ -15,11 +19,15 @@ export const startServer = async() => {
     const schema = await genSchema();
     //console.log("type de schema " + typeof schema);
     //console.dir(schema);
+    /*const SESSION_SECRET = process.env.NODE_ENV === "test"
+        ? "rtyu4376tfvbnm,"
+        : process.env.SESSION_SECRET as string;*/
+    //const RedisStore = connectRedis(session);
     const server = new ApolloServer({
         schema: schema,
         subscriptions:{
             path:"/subscriptions"
-        }
+        },
         /*context: async({req} : any) => ({
             redis,
             url: req.protocol + "://" + req.get("host"),
@@ -36,6 +44,18 @@ export const startServer = async() => {
     }
     app.use(bodyParser({limit: '50mb'}));
     app.use(cors(corsOptions));
+    /*app.use(session({
+        store: new RedisStore({client: redis as any}),
+        name: "pid", // change it to whatever you want
+        secret: SESSION_SECRET,
+        resave: false,
+        saveUninitialized: false,
+        cookie: {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            maxAge: 1000 * 60 * 60 * 24 *7 // 7 days
+        }
+    }));*/
     app.use('/', apiRouter);
     //app.use(apolloUploadExpress({maxFileSize: 10000000, maxFiles: 2}));
     server.applyMiddleware({app, cors: corsOptions});

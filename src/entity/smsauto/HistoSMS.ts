@@ -45,6 +45,10 @@ export class HistoSMS {
     isSent : boolean;
 
     @Field()
+    @Column("varchar",{length:10})
+    provider : string
+
+    @Field()
     @CreateDateColumn()
     dateEnvoi : string;
 

@@ -5,7 +5,7 @@ import {
     Arg,
     FieldResolver,
     Root,
-    Mutation
+    Mutation,
 } from 'type-graphql';
 import {HistoSMS} from '../../entity/smsauto/HistoSMS';
 import {getConnection} from 'typeorm';
@@ -92,6 +92,7 @@ export class UserAppsResolver {
         }
         @Mutation(returns => User, {nullable: true})
         async loginUser(@Arg("username", type => String)username: string,@Arg("password", type => String)password: string) {
+
             const userRepository = getConnection("smsauto").getRepository(User);
             
                 this.user = await userRepository.findOne({where: {

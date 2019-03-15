@@ -14,12 +14,13 @@ export class HistoSMSResolver {
         type,
         to,
         qui,
+        provider,
         dateEnvoi,
         containMessage
     } : HistoSMS_Args) {
         const histoRepository = getConnection("smsauto").getRepository(HistoSMS);
         //valeur seules
-        if (appId && !type && !qui && !to && !dateEnvoi && !containMessage) {
+        if (appId && !type && !qui && !to && !dateEnvoi && !containMessage && !provider) {
             this.HistoSMSCollection = await histoRepository.find({
                 where: {
                     from: appId
@@ -30,7 +31,7 @@ export class HistoSMSResolver {
             else 
                 return null;
             }
-        else if (!appId && type && !qui && !to && !dateEnvoi && !containMessage) {
+        else if (!appId && type && !qui && !to && !dateEnvoi && !containMessage && !provider) {
             this.HistoSMSCollection = await histoRepository.find({where: {
                     type
                 }});
@@ -39,7 +40,7 @@ export class HistoSMSResolver {
             else 
                 return null;
             }
-        else if (!appId && !type && qui && !to && !dateEnvoi && !containMessage) {
+        else if (!appId && !type && qui && !to && !dateEnvoi && !containMessage && !provider) {
             this.HistoSMSCollection = await histoRepository.find({
                 where: {
                     auBudgetDeLa: qui
@@ -50,7 +51,7 @@ export class HistoSMSResolver {
             else 
                 return null;
             }
-        else if (!appId && !type && !qui && to && !dateEnvoi && !containMessage) {
+        else if (!appId && !type && !qui && to && !dateEnvoi && !containMessage && !provider) {
             this.HistoSMSCollection = await histoRepository.find({where: {
                     to
                 }});
@@ -59,7 +60,7 @@ export class HistoSMSResolver {
             else 
                 return null;
             }
-        else if (!appId && !type && !qui && !to && dateEnvoi && !containMessage) {
+        else if (!appId && !type && !qui && !to && dateEnvoi && !containMessage && !provider) {
             this.HistoSMSCollection = await histoRepository.find({where: {
                     dateEnvoi
                 }});
@@ -68,10 +69,21 @@ export class HistoSMSResolver {
             else 
                 return null;
             }
-        else if (!appId && !type && !qui && !to && !dateEnvoi && containMessage) {
+        else if (!appId && !type && !qui && !to && !dateEnvoi && containMessage && !provider) {
             this.HistoSMSCollection = await histoRepository.find({
                 where: {
                     message: Like(`%${containMessage}%`)
+                }
+            });
+            if (this.HistoSMSCollection.length) 
+                return this.HistoSMSCollection;
+            else 
+                return null;
+            }
+        else if (!appId && !type && !qui && !to && !dateEnvoi && !containMessage && provider) {
+            this.HistoSMSCollection = await histoRepository.find({
+                where: {
+                    provider
                 }
             });
             if (this.HistoSMSCollection.length) 
@@ -181,6 +193,7 @@ export class HistoSMSResolver {
             qui,
             message,
             to,
+            provider,
             transactionId,
             isSent
         } = sms;
@@ -192,6 +205,7 @@ export class HistoSMSResolver {
             auBudgetDeLa: qui,
             message,
             to,
+            provider,
             transactionID_API: transactionId,
             isSent
         });
@@ -202,6 +216,7 @@ export class HistoSMSResolver {
                 auBudgetDeLa: qui,
                 message,
                 to,
+                provider,
                 transactionID_API: transactionId,
                 isSent
             }

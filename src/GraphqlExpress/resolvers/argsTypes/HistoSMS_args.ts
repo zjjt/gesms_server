@@ -18,6 +18,11 @@ export class HistoSMS_Args implements Partial < HistoSMS > {
         ?
         : string;
     @Field(type => String, {nullable: true})
+    @MaxLength(8)
+    provider
+        ?
+        : string
+    @Field(type => String, {nullable: true})
     @Length(8, 8)
     to
         ?

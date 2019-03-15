@@ -13,6 +13,9 @@ export class HistoSMS_Inputs implements Partial < HistoSMS > {
     @MaxLength(10)
     qui : string;
     @Field()
+    @MaxLength(10)
+    provider : string;
+    @Field()
     message : string;
     @Field()
     @Length(8, 8)

@@ -19,7 +19,12 @@ export class SmsResolver {
         console.dir(res);
         return res;
     }
+    @Mutation(returns=>Boolean)
+    async setProviderMutation(
+        @Arg("provider")provider?:string,
+    ){
 
+    }
     @Mutation(returns => Boolean)
     async publisherMutation(
         @PubSub("NOTIFICATIONS") publish:Publisher<NotificationPayload>,

@@ -1,7 +1,12 @@
-const URL = require('url');
-const axios = require('axios')
+import { getConnection } from "typeorm";
+import { SmsProvider } from "../entity/smsauto/SmsProvider";
+import moment = require("moment");
+//import * as qs from 'qs';
 
-export const smsApi = async(originator : string, defDate : string, blink : boolean, flash : boolean, privat : boolean, numbers : string[], sms : string) => {
+const URL = require('url');
+const axios = require('axios');
+
+export const smsApiMTN = async(originator : string, defDate : string, blink : boolean, flash : boolean, privat : boolean, numbers : string[], sms : string) => {
 
     let numberString : string = "";
     numbers.map((e, i, arr) => {
@@ -16,7 +21,7 @@ export const smsApi = async(originator : string, defDate : string, blink : boole
     })
     console.log("numberString " + numberString);
     let result;
-    let url = URL.parse(`http://smspro.mtn.ci/bms/Soap/Messenger.asmx/HTTP_SendSms?customerID=4095&userName=AMACOU&userPassword=Password001&originator=${originator}&messageType=ArabicWithLatinNumbers&defDate=${defDate}&blink=${blink}&flash=${flash}&Private=${privat}&recipientPhone=${numberString}&smsText=${encodeURIComponent(sms)}`);
+    let url = URL.parse(`http://smspro.mtn.ci/bms/Soap/Messenger.asmx/HTTP_SendSms?customerID=4095&userName=${process.env.MTN_USER}&userPassword=${process.env.MTN_PASSWORD}&originator=${originator}&messageType=ArabicWithLatinNumbers&defDate=${defDate}&blink=${blink}&flash=${flash}&Private=${privat}&recipientPhone=${numberString}&smsText=${encodeURIComponent(sms)}`);
     if (process.env.NODE_ENV != "production") {
         
         console.log("sending one sms");
@@ -42,3 +47,87 @@ export const smsApi = async(originator : string, defDate : string, blink : boole
     }
     return await result;
 }
+
+export const smsOCI=async(number:string,sms:string,dbtoken:any)=>{
+    //prefixer les numeros par +225 
+    
+    number="tel:+225"+number;
+    
+    //get token from orange CI if token doesnt exist yet
+    const providerRepository = getConnection("smsauto").getRepository(SmsProvider);
+    //check in db if token exists
+
+    //si la date d'expiration du token eest passee ou le token n'existe pas mm
+    if(!dbtoken||moment(new Date()).isAfter(dbtoken!.expirationToken)){
+        //recreer le token et MAJ
+        let token;
+        let str = "";
+        const req={
+            grant_type:'client_credentials'
+        };
+        
+            str += "grant_type" + "=" + encodeURIComponent(req.grant_type);
+        
+        
+        const getTokenOptions={
+            method:'post',
+            url:'https://api.orange.com/oauth/v2/token',
+            withCredentials:true,
+            crossDomain:true,
+            headers:{
+                'Authorization': process.env.ORANGE_AUTH as string,
+                'content-type': 'application/x-www-form-urlencoded'
+            },
+            data:str
+        };
+        try{
+            token=await axios(getTokenOptions); 
+        }catch(err){
+            console.log(err);
+        }
+        if(token){
+            //console.dir(token);
+            dbtoken.token=token.data.access_token;
+            await providerRepository.update(
+                {
+                    provider:"ORANGE"
+                },
+                {
+                token:token.data.access_token,
+                expirationToken:moment(token.data.expires_in).format("DD-MM-YYYY")
+            });
+        }
+    }
+    //sending the sms
+    let options={
+        outboundSMSMessageRequest:{
+            address:number,
+            senderAddress:`tel:+225${process.env.ORANGE_SENDER}`,
+            senderName:"NSIA VIE CI",
+            outboundSMSTextMessage:{
+                message: sms
+            }
+        }
+    };
+    let result;
+    let url=`https://api.orange.com/smsmessaging/v1/outbound/tel%3A%2B225${process.env.ORANGE_SENDER}/requests`;
+    try {
+        console.log("-------------------------------------------");
+        console.log(dbtoken.token);
+        result = await axios({
+            method:'post',
+            //withCredentials:true,
+           // crossDomain:true,
+            url:url,
+            headers:{
+                'Authorization': `Bearer ${dbtoken.token}`,
+                'Content-type': 'application/json'
+            },
+            data:options
+        });
+    } catch (err) {
+        console.error(err.response.data);
+    }
+    return await result;
+
+};
