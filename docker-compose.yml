@@ -1,5 +1,36 @@
 app:
   image: gesms_server
+  container_name: gesms_server
+  environment:
+    - EXTRANET_DB_PROD=DB_EXTRANET_VIE
+    - EXTRANET_DB_DEV=DB_EXTRANET_VIE_DEVELOPPEMENT
+    - EXTRANET_DB_HOST=10.10.3.65
+    - EXTRANET_DB_PORT=
+    - EXTRANET_USER=nsiavie
+    - EXTRANET_PASSWORD=nsiavie
+    - SUNSHINE_DB_PROD=SUN_COTEDIVOIRE
+    - SUNSHINE_DB_TEST=SUNDB_RCI
+    - SUNSHINE_DB_HOST=10.8.3.29
+    - SUNHINE_DB_PORT=57055
+    - SUNSHINE_USER=reportvie
+    - SUNHINE_PASSWORD=reportvie
+    - DB_PROD=smsauto
+    - DB_TEST=
+    - DB_HOST=localhost
+    - DB_PORT=5432
+    - DB_USER=postgres
+    - DB_PASSWORD=
+    - PROXY_URL=10.10.4.30:8080
+    - PROXY_USERNAME=thibaut.zehi
+    - PROXY_PASSWORD=ZjjTEnT@1988
+    - MTN_USER=AMACOU
+    - MTN_PASSWORD=Password001
+    - ORANGE_APPID=pjR7FdFgvU6O9L3B
+    - ORANGE_SECRET=pjR7FdFgvU6O9L3B
+    - ORANGE_CLIENTID=pjR7FdFgvU6O9L3B
+    - ORANGE_SENDER=59367811
+    - ORANGE_AUTH=Basic OU5wTXdWQWxqZ2lPOERFRjNyc0JockdUQWkxNHNaU2c6MFhCNEdVem4yS3RJZXNFeQ==
+    - GRAPHQL_API=http://localhost:4000/graphql
   ports:
     - "97:4000"   
   links:
@@ -7,6 +38,7 @@ app:
   restart: always
 postgresql:
   image: postgres
+  container_name: gesms_postgres
   ports:
     - "5432:5432" 
   restart: always
