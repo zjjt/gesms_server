@@ -1,44 +1,73 @@
-app:
-  image: gesms_server
-  container_name: gesms_server
-  environment:
-    - EXTRANET_DB_PROD=DB_EXTRANET_VIE
-    - EXTRANET_DB_DEV=DB_EXTRANET_VIE_DEVELOPPEMENT
-    - EXTRANET_DB_HOST=10.10.3.65
-    - EXTRANET_DB_PORT=
-    - EXTRANET_USER=nsiavie
-    - EXTRANET_PASSWORD=nsiavie
-    - SUNSHINE_DB_PROD=SUN_COTEDIVOIRE
-    - SUNSHINE_DB_TEST=SUNDB_RCI
-    - SUNSHINE_DB_HOST=10.8.3.29
-    - SUNHINE_DB_PORT=57055
-    - SUNSHINE_USER=reportvie
-    - SUNHINE_PASSWORD=reportvie
-    - DB_PROD=smsauto
-    - DB_TEST=
-    - DB_HOST=localhost
-    - DB_PORT=5432
-    - DB_USER=postgres
-    - DB_PASSWORD=
-    - PROXY_URL=10.10.4.30:8080
-    - PROXY_USERNAME=thibaut.zehi
-    - PROXY_PASSWORD=ZjjTEnT@1988
-    - MTN_USER=AMACOU
-    - MTN_PASSWORD=Password001
-    - ORANGE_APPID=pjR7FdFgvU6O9L3B
-    - ORANGE_SECRET=pjR7FdFgvU6O9L3B
-    - ORANGE_CLIENTID=pjR7FdFgvU6O9L3B
-    - ORANGE_SENDER=59367811
-    - ORANGE_AUTH=Basic OU5wTXdWQWxqZ2lPOERFRjNyc0JockdUQWkxNHNaU2c6MFhCNEdVem4yS3RJZXNFeQ==
-    - GRAPHQL_API=http://localhost:4000/graphql
-  ports:
-    - "97:4000"   
-  links:
-    - postgresql
-  restart: always
-postgresql:
-  image: postgres
-  container_name: gesms_postgres
-  ports:
-    - "5432:5432" 
-  restart: always
+version: '2.0'
+services:
+  app:
+    image: gesms_server
+    container_name: gesms_server
+    environment:
+      - NODE_OPTIONS=--max_old_space_size=3000000
+      - EXTRANET_DB_PROD=DB_EXTRANET_VIE
+      - EXTRANET_DB_DEV=DB_EXTRANET_VIE_DEVELOPPEMENT
+      - EXTRANET_DB_HOST=10.10.3.65
+      - EXTRANET_DB_PORT=
+      - EXTRANET_USER=nsiavie
+      - EXTRANET_PASSWORD=nsiavie
+      - SUNSHINE_DB_PROD=SUN_COTEDIVOIRE
+      - SUNSHINE_DB_TEST=SUNDB_RCI
+      - SUNSHINE_DB_HOST=10.8.3.29
+      - SUNHINE_DB_PORT=57055
+      - SUNSHINE_USER=reportvie
+      - SUNHINE_PASSWORD=reportvie
+      - DB_PROD=smsauto
+      - DB_TEST=
+      - DB_HOST=postgresql
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=
+      - PROXY_URL=10.10.4.30:8080
+      - PROXY_USERNAME=thibaut.zehi
+      - PROXY_PASSWORD=ZjjTEnT@1988
+      - MTN_USER=AMACOU
+      - MTN_PASSWORD=Password001
+      - SYMTEL_USERNAME=NSIA Vie CI
+      - SYMTEL_PASSWORD=N51@v132020
+      - ORANGE_APPID=ImGfFSGNIu9SwyAU
+      - ORANGE_SECRET=J8hqi9Yb4fw7kReF
+      - ORANGE_CLIENTID=CjAzMAEnilRAbGRJRBgRcDoMNUld918x
+      - ORANGE_SENDER=59367811
+      - ORANGE_AUTH=Basic Q2pBek1BRW5pbFJBYkdSSlJCZ1JjRG9NTlVsZDkxOHg6SjhocWk5WWI0Znc3a1JlRg==
+      - GRAPHQL_API=http://192.168.99.113:97/graphql
+      - ANNIVHOUR="19 14 * * *"
+      - SENDERMAIL="thibaut.zehi@groupensia.com"
+      #- CCMAIL=""
+      #- BCCMAIL=""
+      - SENDERPASS="ZjjTEnt@1988"
+      - SMTP_HOST=10.10.4.15
+      - SMTP_PORT=25
+      - CCMAIL="Exploitation_VIECI@groupensia.com,amlanta.bamba@groupensia.com,yves.koffi@groupensia.com"
+      - BCCMAIL="nadege.toure@groupensia.com" 
+      
+    ports:
+      - "97:4000"   
+    links:
+      - postgresql
+    restart: always
+
+  postgresql:
+    image: postgres:11.5
+    container_name: gesms_postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432" 
+    restart: always
+  # pgadmin:
+  #   container_name: pgadmin
+  #   build: ../pgadmin
+  #   ports:
+  #     - "5050:80"
+  #   links:
+  #     - postgresql
+  #   restart: always
+
+volumes:
+  pgdata: 

@@ -1,11 +1,26 @@
 import { getConnection } from "typeorm";
 import { SmsProvider } from "../entity/smsauto/SmsProvider";
-import moment = require("moment");
+//import { HistoSMS } from "../entity/smsauto/HistoSMS";
+import {request} from 'graphql-request';
+const moment = require("moment");
 //import * as qs from 'qs';
 
 const URL = require('url');
 const axios = require('axios');
-
+const histoMutation = (type : string, appId : string, qui : string, message : string, to : string,provider:string, tid : string, isSent : boolean) => `mutation{
+    addHistoSMS(data:{type:"${type}",appId:"${appId}",qui:"${qui}",message:"""${message}""",to:"${to}",provider:"${provider}",transactionId:"${tid}",isSent:${isSent}}){
+        id
+        type
+        from
+        auBudgetDeLa
+        message
+        to
+        provider
+        transactionID_API
+        isSent
+        dateEnvoi
+    }
+}`;
 export const smsApiMTN = async(originator : string, defDate : string, blink : boolean, flash : boolean, privat : boolean, numbers : string[], sms : string) => {
 
     let numberString : string = "";
@@ -47,8 +62,10 @@ export const smsApiMTN = async(originator : string, defDate : string, blink : bo
     }
     return await result;
 }
+export const smsSymtel=async(number:string,sms:string,from:string,)=>{
 
-export const smsOCI=async(number:string,sms:string,dbtoken:any)=>{
+};
+export const smsOCI=async(number:string,sms:string,dbtoken:any,details:any,expeditor?:string)=>{
     //prefixer les numeros par +225 
     
     number="tel:+225"+number;
@@ -58,7 +75,7 @@ export const smsOCI=async(number:string,sms:string,dbtoken:any)=>{
     //check in db if token exists
 
     //si la date d'expiration du token eest passee ou le token n'existe pas mm
-    if(!dbtoken||moment(new Date()).isAfter(dbtoken!.expirationToken)){
+if(!dbtoken/*||moment(new Date()).isAfter(dbtoken!.expirationToken)*/){
         //recreer le token et MAJ
         let token;
         let str = "";
@@ -83,10 +100,11 @@ export const smsOCI=async(number:string,sms:string,dbtoken:any)=>{
         try{
             token=await axios(getTokenOptions); 
         }catch(err){
-            console.log(err);
+            console.dir(err);
+            
         }
         if(token){
-            //console.dir(token);
+           // console.dir(token);
             dbtoken.token=token.data.access_token;
             await providerRepository.update(
                 {
@@ -103,7 +121,7 @@ export const smsOCI=async(number:string,sms:string,dbtoken:any)=>{
         outboundSMSMessageRequest:{
             address:number,
             senderAddress:`tel:+225${process.env.ORANGE_SENDER}`,
-            senderName:"NSIA VIE CI",
+            senderName:expeditor,
             outboundSMSTextMessage:{
                 message: sms
             }
@@ -112,8 +130,8 @@ export const smsOCI=async(number:string,sms:string,dbtoken:any)=>{
     let result;
     let url=`https://api.orange.com/smsmessaging/v1/outbound/tel%3A%2B225${process.env.ORANGE_SENDER}/requests`;
     try {
-        console.log("-------------------------------------------");
-        console.log(dbtoken.token);
+        console.log("---------------------||||----------------------");
+        //console.log(dbtoken.token);
         result = await axios({
             method:'post',
             //withCredentials:true,
@@ -126,7 +144,12 @@ export const smsOCI=async(number:string,sms:string,dbtoken:any)=>{
             data:options
         });
     } catch (err) {
-        console.error(err.response.data);
+        //console.dir(err);
+        //result=err.response.data;
+        console.error("Une erreur critique a eu lieu lors de l'envoi");
+        await request(process.env.GRAPHQL_API as string, histoMutation(details.type, details.appId, details.qui, details.message, number, "ORANGE","echec", false));
+
+        console.error(err);
     }
     return await result;
 

@@ -7,10 +7,12 @@ import {genSchema} from './graphqlSchema';
 import {Launcher} from '../fonctions/LauncherScheduler';
 import * as scheduler from "node-schedule";
 import * as bodyParser from 'body-parser';
+import * as session from 'express-session';
+//import { sendSMS } from '../fonctions/sendSMS';
 /*import * as session from 'express-session';
 import * as connectRedis from 'connect-redis';
 import {redis} from './redis';*/
-
+//const cron=require('cron');
 const http=require('http');
 // import {processRequest} from "graphql-upload"; import {apolloUploadExpress}
 // from 'graphql-upload';
@@ -28,11 +30,14 @@ export const startServer = async() => {
         subscriptions:{
             path:"/subscriptions"
         },
-        /*context: async({req} : any) => ({
-            redis,
-            url: req.protocol + "://" + req.get("host"),
-            session: req.session
-        })*/
+        context: async({req} : any) =>{
+            req.session.de='';
+            req.session.encours=false;
+            return {
+                url: req.protocol + "://" + req.get("host"),
+                session: req.session
+            };
+        }
     });
     const app = express();
     let port = process.env.PORT || 3000;
@@ -42,8 +47,9 @@ export const startServer = async() => {
             ? "*"
             : (process.env.FRONTEND_HOST as string)
     }
-    app.use(bodyParser({limit: '50mb'}));
+    app.use(bodyParser({limit: '150mb'}));
     app.use(cors(corsOptions));
+    app.use(session({secret: 'ssshhhhh'}));
     /*app.use(session({
         store: new RedisStore({client: redis as any}),
         name: "pid", // change it to whatever you want
@@ -79,10 +85,24 @@ export const startServer = async() => {
             : 4000,
         server
     };
+   // await Launcher();
 //console.log(server);
-    scheduler.scheduleJob("launcher", "*/1 * * * *", async() => {
+//let inc=0;
+   scheduler.scheduleJob("launcher", "*/1 * * * *", async() => {
         return await Launcher();
     })
+    
+   /* scheduler.scheduleJob("ANNIVERSAIRE",process.env.ANNIVHOUR, () => {
+                            
+        console.log('execution of the anniversaire job '+inc);
+        inc++;
+     sendSMS("ANNIVERSAIRE");
+       // await typeSmsRepository.update(e.id, {launchedOnce: true});
+       // console.log('end of updating the anniversaire table');
+        //if(scheduler.scheduledJobs[e.type])return; 
+    
+});*/
+
    // console.log(scheduler.scheduledJobs)
     return App;
 };

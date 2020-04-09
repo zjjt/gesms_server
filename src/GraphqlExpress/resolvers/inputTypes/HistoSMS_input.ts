@@ -1,6 +1,6 @@
 import {InputType, Field} from "type-graphql";
 import {HistoSMS} from '../../../entity/smsauto/HistoSMS';
-import {MaxLength, Length} from "class-validator";
+import {MaxLength} from "class-validator";
 
 @InputType({description: "for a new row representing SMS"})
 export class HistoSMS_Inputs implements Partial < HistoSMS > {
@@ -18,7 +18,6 @@ export class HistoSMS_Inputs implements Partial < HistoSMS > {
     @Field()
     message : string;
     @Field()
-    @Length(8, 8)
     to : string;
     @Field()
     transactionId : string;

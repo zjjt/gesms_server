@@ -1,6 +1,6 @@
 import {Field, ArgsType} from "type-graphql";
 import {HistoSMS} from '../../../entity/smsauto/HistoSMS';
-import {MaxLength, Length} from "class-validator";
+import {MaxLength} from "class-validator";
 
 @ArgsType()
 export class HistoSMS_Args implements Partial < HistoSMS > {
@@ -18,12 +18,10 @@ export class HistoSMS_Args implements Partial < HistoSMS > {
         ?
         : string;
     @Field(type => String, {nullable: true})
-    @MaxLength(8)
     provider
         ?
         : string
     @Field(type => String, {nullable: true})
-    @Length(8, 8)
     to
         ?
         : string;

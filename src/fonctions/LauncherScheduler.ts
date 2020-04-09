@@ -65,18 +65,23 @@ export const Launcher = async() => {
             switch (e.type) {
                 case "ANNIVERSAIRE":
                     console.log("smstype: " + e.type);
-                    const thisJob = scheduler.scheduledJobs[`${e.type}`];
-                    if (thisJob) {
-                        break;
-                    } else {
+                    if(scheduler.scheduledJobs[e.type]){
+                        scheduler.scheduledJobs[e.type].cancel();
+                    }
+                    
                         const j = scheduler.scheduleJob(e.type, e.timeOfLaunch, async() => {
-                            await sendSMS("ANNIVERSAIRE");
-                            await typeSmsRepository.update(e.id, {launchedOnce: true});
+                            
+                                console.log('execution of the anniversaire job');
+                                await sendSMS("ANNIVERSAIRE");
+                               // await typeSmsRepository.update(e.id, {launchedOnce: true});
+                                console.log('end of updating the anniversaire table');
+                                //if(scheduler.scheduledJobs[e.type])return; 
+                            
                         });
                         smsJobs.push(j);
                         console.log("set up SMS ANNIF done");
                         break;
-                    }
+                    
 
                 default:
                     //genere le job custom ici

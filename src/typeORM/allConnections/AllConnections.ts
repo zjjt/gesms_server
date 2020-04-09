@@ -10,13 +10,14 @@ export const AllConnections = async() => {
     console.log("database sunshine is " + connectionOptionsSunshine.database);
     console.log("database smsAuto is " + connectionOptionsSmsauto.database);
 
-    return createConnections([/*{
+    return createConnections([{
             ...connectionOptionsExtranet,
             name: "extranet"
-        }, {
+        }, 
+        {
             ...connectionOptionsSunshine,
             name: "sunshine"
-        }, */
+        }, 
         {
             ...connectionOptionsSmsauto,
             name: "smsauto"

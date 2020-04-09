@@ -19,6 +19,7 @@ export const getSMS_anniverssaire = async() => {
 
         if (r.length) {
             r.push({number:"59367811",sms:"sms anniversaire envoyés"});
+            r.push({number:"05601220",sms:"sms anniversaire envoyés"});
             return r;
         }
     } else 

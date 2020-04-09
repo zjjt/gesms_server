@@ -105,11 +105,12 @@
 }, {
     "name": "developmentSmsAuto",
     "type": "postgres",
-    "host": "localhost",
+    "host": "postgresql",
     "port": 5432,
     "username": "postgres",
     "password": "",
     "database": "smsauto",
+    "autoSchemaSync":true,
     "synchronize": true,
     "logging": true,
     "entities": [
@@ -129,11 +130,12 @@
 }, {
     "name": "testSmsAuto",
     "type": "postgres",
-    "host": "localhost",
+    "host": "192.168.99.111",
     "port": 5432,
     "username": "postgres",
     "password": "",
     "database": "smsautoTest",
+    "autoSchemaSync":true,
     "synchronize": true,
     "logging": true,
     "dropSchema": true,

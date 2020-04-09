@@ -4,6 +4,66 @@ import {getConnection,Not} from 'typeorm';
 import moment = require('moment');
 const axios = require('axios');
 //import * as $ from 'jquery';
+async function getOrangeToken(){
+    let str = "";
+    let token;
+    const req={
+        grant_type:'client_credentials'
+    };
+    
+        str += "grant_type" + "=" + encodeURIComponent(req.grant_type);
+
+        const getTokenOptions={
+            method:'post',
+            url:'https://api.orange.com/oauth/v2/token',
+            withCredentials:true,
+            crossDomain:true,
+            headers:{
+                'Authorization': process.env.ORANGE_AUTH as string,
+                'content-type': 'application/x-www-form-urlencoded'
+            },
+            data:str
+        };
+        try{
+            token=await axios(getTokenOptions); 
+        }catch(err){
+            console.dir(err);    
+        }
+        return token.data.access_token;
+    }
+
+async function  getSmsBalance(){
+    let token='';
+    try{
+        token=await getOrangeToken(); 
+        console.log("token is "+token);
+        console.dir(token);
+    }catch(err){
+        console.dir(err);    
+    }
+    if(token && token !=''){
+    const getBalanceOptions={
+        method:'get',
+        url:'https://api.orange.com/sms/admin/v1/contracts',
+        withCredentials:true,
+        crossDomain:true,
+        headers:{
+            'Authorization': "Bearer "+token,
+            'content-type': 'application/json'
+        },
+    };
+    try{
+        console.log("getting current balance");
+      let result=await axios(getBalanceOptions); 
+      console.dir(result.data.partnerContracts.contracts[0].serviceContracts[0].availableUnits);
+      return result;
+    }catch(err){
+        console.log("error while getting balance");
+        console.dir(err);   
+    }
+   }
+}
+
 function convertTimestampDate(timestamp:any) {
     var date = new Date(                          // Convert to date
       parseInt(                                   // Convert to integer
@@ -27,6 +87,10 @@ export class SmsProviderResolver {
                 chosen:true
             }
         });
+        
+        let gettingIt=await getSmsBalance();
+        voila!.unite=gettingIt.data.partnerContracts.contracts[0].serviceContracts[0].availableUnits;
+        voila!.dateFin=gettingIt.data.partnerContracts.contracts[0].serviceContracts[0].expires;
         return voila?voila:null;
 
     }

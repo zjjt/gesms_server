@@ -27,6 +27,12 @@ export class SmsProvider {
     @Column({nullable:true})
     expirationToken : string;
 
+    @Field()
+    unite: number;
+
+    @Field()
+    dateFin: string;
+
     @Column("boolean", {default: false})
     chosen : boolean;
 }

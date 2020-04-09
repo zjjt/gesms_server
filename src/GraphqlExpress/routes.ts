@@ -7,7 +7,10 @@ import { sendSMS } from '../fonctions/sendSMS';
 
 
 export const apiRouter = express.Router();
-
+export let SESSION:any;
+apiRouter.get('/',(req,res) => {
+   SESSION=req.session;
+});
 apiRouter
     .route('/sendSMS')
     .post(async(req, res) => {
@@ -27,15 +30,25 @@ apiRouter
             if(!user||!isValidPassword){
                 res.status(400).json({error:"authentication failed"});
             }else if(telephone &&(!/^\d+$/.test(telephone)|| telephone.length<8)){
-                res.status(500).json({error:"wrong phone number entered"});
+                res.status(400).json({error:"wrong phone number entered"});
             }else{
+                
                 let composition=null;
-                if(!smsArray)
-                 composition={sms,number:telephone};
-                let r=await sendSMS(typeEnvoi,undefined,{id:user.id,direction:user.direction},composition?[composition]:smsArray,expeditor);
-                console.log("resultat d'envoi\n");
-                console.dir(r);
-                res.status(200).json({result:"Les sms sont bien partis"});
+                let expeditorArray=['Nsia Vie CI','MoovEpargne','MoovSoutien','DiamondBank','AssistEtude','NovaPension','EpargnePlus','Ecopension','UBA Ep Pro','CapitalBonu','Pierre Plus','BHCI Compas'];
+                if(expeditorArray.includes(expeditor)){
+                    if(!smsArray)
+                    composition={sms,number:telephone};
+                       let r= await sendSMS(typeEnvoi,undefined,{id:user.id,direction:user.direction},composition?[composition]:smsArray,expeditor);
+                       console.log(r);
+                       res.status(200).json({result:"Envoi effectue"});
+                       
+                }else{
+                    res.status(400).json({error:"une erreur est survenue lors de l'envoi, veuillez reverifier les parametres utilisés"});
+
+                }
+               
+                
+                
             }
         }else{
             res.status(500).json({error:"please fill out the body of the request"});
