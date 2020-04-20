@@ -1,5 +1,5 @@
 import {getSMS_anniverssaire} from "./getSMS_anniverssaire";
-import {smsApiMTN, smsOCI} from "./APISMS";
+import {smsApiMTN, smsOCI, smsSymtel} from "./APISMS";
 const moment = require("moment");
 //import * as casual from 'casual';
 import {User} from "../entity/smsauto/User";
@@ -10,6 +10,7 @@ import {request} from 'graphql-request';
 //import * as scheduler from 'node-schedule';
 import { SmsProvider } from "../entity/smsauto/SmsProvider";
 import { HistoSMS } from "../entity/smsauto/HistoSMS";
+import { parseSymtelResponse } from "../utils/utils";
 const Excel= require('exceljs');
 const fs = require('fs');
 const nodeoutlook = require('nodemailer');
@@ -150,16 +151,35 @@ export const sendSMS = async(typeSMS : string, text
     }else{
 //single run only
         if(typeof smslist != "undefined" && typeof user !="undefined" ){
-            let ok:Promise<SmsRapport>;
+            let ok:any;
             //Envoi maintenant en cours
             let currentUser=await userRepository.findOne({id:user.id});
             await request(process.env.GRAPHQL_API as string, enCoursMutation(currentUser!.username,true));
             //let waitInterval=5000;
-            smslist.map(async (e,i)=>{
+            //Here we verify that all sms sent are identical
+            //if they are it will let us take advantage of symtel api batch processing
+           let smsIsSame=smslist.map((e,i)=>{
+               return e.sms;
+           });
+           let isTrulySame=smsIsSame.some((e,i)=>smsIsSame.indexOf(e)!=i);
+           if(isTrulySame && smsapi!.provider==="SYMTEL"){
+               //if all sms to send are identical and we use symtel
+               console.log("tous les sms sont identiques et l'api utilisé est SYMTEL");
+               //count the number of sms to send adn check wether it's over 500
+               if(smslist.length<=500){
+                    //proceed with the sending
+                await request(process.env.GRAPHQL_API as string, enCoursMutation(currentUser!.username,true));
+
+               }else{
+                   //split the smslist into arrays of 500sms each and proceed with the sending
+               }
+
+           }
+           ok=await smslist.map(async (e,i)=>{
               //await wait(waitInterval);
               await request(process.env.GRAPHQL_API as string, enCoursMutation(currentUser!.username,true));
 
-                if(i<smslist.length)
+                if(i<smslist.length )
                 {
 
                     let r=await traiTment(e,i,ok,expeditor,typeSMS,userRepository,user,histoMutation,publisherMutation,smsapi,smslist.length-1);
@@ -241,17 +261,70 @@ export const sendSMS = async(typeSMS : string, text
                 return;
             });
             //Etablissement du rapport d'envoi
+            return ok;
            
-       return null;
+      // return null;
     }
 };
 
-async function traiTment(e:any,i:any,ok:any,expeditor:any,typeSMS:any,userRepository:any,user:any,histoMutation:any,publisherMutation:any,smsapi:any,lastindex:any){
+async function traiTment(e:any,i:any,ok:any,expeditor:any,typeSMS:any,userRepository:any,user:any,histoMutation:any,publisherMutation:any,smsapi:any,lastindex:any,identical?:boolean,smsList?:any,staticSMS?:string){
     const providerRepository = getConnection("smsauto").getRepository(SmsProvider);
     let dbtoken=await providerRepository.findOne({where:{
         provider:'ORANGE'
     }});
     console.log(`API ${smsapi.provider} utiliser pour les envois`);
+    if(identical && smsList.length && staticSMS){
+        //the sms are identical and we use symtel api and we send in the array of numbers
+        let p=new Promise((resolve,reject)=>{
+            setTimeout(async ()=>{
+                console.log("contents of e is");
+                console.dir(e);
+                //console.dir(e.sms);
+                console.log("reponse en json reel");
+                let heureEnvoi= moment().format("HH:mm");
+                let res:any;
+                //envoi de 500sms minimum
+                res=await smsSymtel(e,smsList,staticSMS,expeditor,{type:typeSMS,appId:user.id,qui:user.direction,message:staticSMS});
+                //process the string returned with a function that returns an array
+                //if res != of all errors
+                if(res!="INTERNAL SERVER ERROR" && res!="AUTHENTICATION FAILED" && res!="SEND SMS DENIED" && res!="FROM DENIED"){
+                    let resArr:any;
+                    resArr=parseSymtelResponse(res);
+                    //archivage in the db
+                    resArr.forEach((e:any) => {
+                        ok= new Promise(async(resolve,reject)=>{
+                            const args = {
+                                type: typeSMS,
+                                appId: user.id,
+                                qui: user.direction,
+                                message: staticSMS,
+                                to: e.number,
+                                provider:smsapi.provider,
+                                transactionId: e.status,
+                                isSent: e.status=="0: Accepted for delivery"||e.status=="3: Queued for later delivery"?true:false
+                            };
+                           await request(process.env.GRAPHQL_API as string, histoMutation(args.type, args.appId, args.qui, args.message, args.to, args.provider,args.transactionId, args.isSent));
+                           const doPub=await request(process.env.GRAPHQL_API as string,publisherMutation(`envoi au ${e.number} effectué`));
+                           console.log(`envoi au ${e.number} effectué publication ${doPub}`);
+                           
+                                resolve({
+                                    sender:user.username,
+                                    number:e.number,
+                                    sms:staticSMS,
+                                    heure_envoi:heureEnvoi,
+                                    status:true
+                                });
+                            });
+                           resolve(ok);
+                    });
+                }else{
+                    resolve();
+                }
+                
+            });
+        });
+        return p;
+    }
     console.log(`i is ${i} and lastindex is ${lastindex}`);
     if(i<=lastindex){
         if(typeSMS==='test'/*||typeSMS==='ANNIVERSAIRE'*/){
@@ -414,7 +487,7 @@ async function traiTment(e:any,i:any,ok:any,expeditor:any,typeSMS:any,userReposi
                                 };
                                await request(process.env.GRAPHQL_API as string, histoMutation(args.type, args.appId, args.qui, args.message, args.to, args.provider,args.transactionId, args.isSent));
                                const doPub=await request(process.env.GRAPHQL_API as string,publisherMutation(`envoi au ${e.number} effectué`));
-                               console.log(doPub);
+                               console.log(`envoi au ${e.number} effectué publication ${doPub}`);
                                
                                     resolve({
                                         sender:theuser.username,

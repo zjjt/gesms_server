@@ -62,9 +62,30 @@ export const smsApiMTN = async(originator : string, defDate : string, blink : bo
     }
     return await result;
 }
-export const smsSymtel=async(number:string,sms:string,from:string,)=>{
 
+//SYMTEL API
+export const smsSymtel=async(numbers:string,numArray:any,sms:string,from:string,details:any)=>{
+    //sending the sms
+    //numArray parameter will be greater than one only if no dynamic sms is sent
+    let result;
+    try{
+        console.log("---------------------||SYMTEL API||----------------------");
+        //console.log(dbtoken.token);
+        result = await axios.get(`https://mmg3.symtel.biz:8443/AMMG/SymtelMMG?username=${process.env.SYMTEL_USERNAME}&passw
+        ord=${process.env.SYMTEL_PASSWORD}&from=${from}&to=${numbers}&dlrmask=31&text=${sms}
+        `);
+    }catch(err){
+        console.error("Une erreur critique a eu lieu lors de l'envoi");
+        numArray.map(async(e:any,i:any)=>{
+            await request(process.env.GRAPHQL_API as string, histoMutation(details.type, details.appId, details.qui, details.message, e, "SYMTEL","echec", false));
+        });
+        console.error(err);
+    }
+    return await result;
 };
+
+
+//ORANGE API
 export const smsOCI=async(number:string,sms:string,dbtoken:any,details:any,expeditor?:string)=>{
     //prefixer les numeros par +225 
     
@@ -130,7 +151,7 @@ if(!dbtoken/*||moment(new Date()).isAfter(dbtoken!.expirationToken)*/){
     let result;
     let url=`https://api.orange.com/smsmessaging/v1/outbound/tel%3A%2B225${process.env.ORANGE_SENDER}/requests`;
     try {
-        console.log("---------------------||||----------------------");
+        console.log("---------------------||ORANGE API||----------------------");
         //console.log(dbtoken.token);
         result = await axios({
             method:'post',
@@ -147,7 +168,8 @@ if(!dbtoken/*||moment(new Date()).isAfter(dbtoken!.expirationToken)*/){
         //console.dir(err);
         //result=err.response.data;
         console.error("Une erreur critique a eu lieu lors de l'envoi");
-        await request(process.env.GRAPHQL_API as string, histoMutation(details.type, details.appId, details.qui, details.message, number, "ORANGE","echec", false));
+        let newtel=number.substring(8);
+        await request(process.env.GRAPHQL_API as string, histoMutation(details.type, details.appId, details.qui, details.message, newtel, "ORANGE","echec", false));
 
         console.error(err);
     }

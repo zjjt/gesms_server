@@ -43,8 +43,8 @@ services:
       - SENDERPASS="ZjjTEnt@1988"
       - SMTP_HOST=10.10.4.15
       - SMTP_PORT=25
-      - CCMAIL="Exploitation_VIECI@groupensia.com,amlanta.bamba@groupensia.com,yves.koffi@groupensia.com"
-      - BCCMAIL="nadege.toure@groupensia.com" 
+      #- CCMAIL="Exploitation_VIECI@groupensia.com,amlanta.bamba@groupensia.com,yves.koffi@groupensia.com"
+      #- BCCMAIL="nadege.toure@groupensia.com" 
       
     ports:
       - "97:4000"   
