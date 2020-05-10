@@ -49,6 +49,11 @@ export const Launcher = async() => {
             provider:"MTN",
         }); 
     }
+    if(!await providerRepository.findOne({where:{provider:"SYMTEL"}})){
+        await providerRepository.save({
+            provider:"SYMTEL",
+        }); 
+    }
     let smsJobs : any = [];
     const typeSmsRepository = await getConnection("smsauto").getRepository(TypeSMS);
     const allTypes = await typeSmsRepository.find({

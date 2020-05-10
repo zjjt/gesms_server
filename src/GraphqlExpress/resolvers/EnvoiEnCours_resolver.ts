@@ -10,14 +10,14 @@ export class EnvoiEnCoursResolver {
     async getEnCours(@Ctx() ctx: Context) {
     
         return {
-            de:ctx.session.de,
+            de:ctx.session!.de,
             encours:ctx.session.encours
         };
     }
     @Mutation(returns => EnvoiEnCours)
     async setEnCours(@Arg("de", type => String)de: string,@Arg("encours", type => Boolean)encours: boolean,@Ctx() ctx: Context) {
-        ctx.session.de=de;
-        ctx.session.encours=encours;
+        ctx.session!.de=de;
+        ctx.session!.encours=encours;
         return {
             de:ctx.session.de,
             encours:ctx.session.encours

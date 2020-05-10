@@ -10,7 +10,7 @@ import {request} from 'graphql-request';
 //import * as scheduler from 'node-schedule';
 import { SmsProvider } from "../entity/smsauto/SmsProvider";
 import { HistoSMS } from "../entity/smsauto/HistoSMS";
-import { parseSymtelResponse } from "../utils/utils";
+import { parseSymtelResponse, concatenateNumberSymtel } from "../utils/utils";
 const Excel= require('exceljs');
 const fs = require('fs');
 const nodeoutlook = require('nodemailer');
@@ -168,7 +168,11 @@ export const sendSMS = async(typeSMS : string, text
                //count the number of sms to send adn check wether it's over 500
                if(smslist.length<=500){
                     //proceed with the sending
-                await request(process.env.GRAPHQL_API as string, enCoursMutation(currentUser!.username,true));
+                    //concatenation des numeros en chaine
+                    let numString=concatenateNumberSymtel(smslist);
+                    console.log("les sms symtel sont parti\n the number string is "+numString)
+                // await request(process.env.GRAPHQL_API as string, enCoursMutation(currentUser!.username,true));
+                // let r=await traiTment(e,i,ok,expeditor,typeSMS,userRepository,user,histoMutation,publisherMutation,smsapi,smslist.length-1);
 
                }else{
                    //split the smslist into arrays of 500sms each and proceed with the sending
@@ -184,6 +188,7 @@ export const sendSMS = async(typeSMS : string, text
 
                     let r=await traiTment(e,i,ok,expeditor,typeSMS,userRepository,user,histoMutation,publisherMutation,smsapi,smslist.length-1);
                     if(i==smslist.length-1){
+                        //mail and report generation
                         await request(process.env.GRAPHQL_API as string, enCoursMutation('',false));
                         console.log("generation du rapport de mail");
                         let recapEnvoi=await histoRepository.createQueryBuilder().where('"type" = :type AND "from"= :from AND CAST("dateEnvoi" AS DATE)= :date', { type:typeSMS,from:user.id,date:`%${moment().format("YYYY-MM-DD")}%` }).getMany();
