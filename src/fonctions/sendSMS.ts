@@ -1,16 +1,16 @@
-import {getSMS_anniverssaire} from "./getSMS_anniverssaire";
-import {smsApiMTN, smsOCI, smsSymtel} from "./APISMS";
-const moment = require("moment");
-//import * as casual from 'casual';
-import {User} from "../entity/smsauto/User";
-import {getConnection,Like} from 'typeorm';
+import { request } from 'graphql-request';
+import { getConnection, Like } from 'typeorm';
 //import {TypeSMS} from '../entity/smsauto/TypeSMS';
-import {parseString} from "xml2js";
-import {request} from 'graphql-request';
+import { parseString } from "xml2js";
+import { HistoSMS } from "../entity/smsauto/HistoSMS";
 //import * as scheduler from 'node-schedule';
 import { SmsProvider } from "../entity/smsauto/SmsProvider";
-import { HistoSMS } from "../entity/smsauto/HistoSMS";
-import { parseSymtelResponse, concatenateNumberSymtel } from "../utils/utils";
+//import * as casual from 'casual';
+import { User } from "../entity/smsauto/User";
+import { concatenateNumberSymtel, parseSymtelResponse } from "../utils/utils";
+import { smsApiMTN, smsOCI, smsSymtel } from "./APISMS";
+import { getSMS_anniverssaire } from "./getSMS_anniverssaire";
+const moment = require("moment");
 const Excel= require('exceljs');
 const fs = require('fs');
 const nodeoutlook = require('nodemailer');
@@ -162,7 +162,7 @@ export const sendSMS = async(typeSMS : string, text
                return e.sms;
            });
            let isTrulySame=smsIsSame.some((e,i)=>smsIsSame.indexOf(e)!=i);
-           if(isTrulySame && smsapi!.provider==="SYMTEL"){
+           if(isTrulySame && smsapi!.provider==="SYMTEL" && process.env.SYMTEL_DEACTIVATE_500 as string!="yes"){
                //if all sms to send are identical and we use symtel
                console.log("tous les sms sont identiques et l'api utilisé est SYMTEL");
                //count the number of sms to send adn check wether it's over 500
@@ -171,11 +171,178 @@ export const sendSMS = async(typeSMS : string, text
                     //concatenation des numeros en chaine
                     let numString=concatenateNumberSymtel(smslist);
                     console.log("les sms symtel sont parti\n the number string is "+numString)
-                // await request(process.env.GRAPHQL_API as string, enCoursMutation(currentUser!.username,true));
-                // let r=await traiTment(e,i,ok,expeditor,typeSMS,userRepository,user,histoMutation,publisherMutation,smsapi,smslist.length-1);
+                 await request(process.env.GRAPHQL_API as string, enCoursMutation(currentUser!.username,true));
+                let r=await traiTment(numString,"",ok,expeditor,typeSMS,userRepository,user,histoMutation,publisherMutation,smsapi,smslist.length-1,true,smslist,smslist[0].sms);
+                //mail and report generation
+                await request(process.env.GRAPHQL_API as string, enCoursMutation('',false));
+                console.log("generation du rapport de mail");
+                let recapEnvoi=await histoRepository.createQueryBuilder().where('"type" = :type AND "from"= :from AND CAST("dateEnvoi" AS DATE)= :date', { type:typeSMS,from:user.id,date:`%${moment().format("YYYY-MM-DD")}%` }).getMany();
+                
+                console.log(recapEnvoi.length);
+                if(recapEnvoi.length>0){
+                   
+                    let workbook = new Excel.Workbook();
+                    workbook.creator = 'GESMS';
+                    workbook.lastModifiedBy = 'GESMS';
+                    workbook.created = new Date();
+                    workbook.modified = new Date();
+                    workbook.lastPrinted = new Date();
+                    workbook.properties.date1904 = true;
+                    let sheet = workbook.addWorksheet(`RAPPORT ${typeSMS}`);
+                    sheet.columns = [
+                        { header: 'Type Envoi', key: 'type', width: 30,outlineLevel :1 },
+                        { header: 'Destinataire', key: 'to', width: 30 ,outlineLevel :1},
+                        { header: 'Expediteur', key: 'exp', width: 30 ,outlineLevel :1},
+                        { header: 'sms', key: 'sms', width: 30 ,outlineLevel :1},
+                        { header: 'Etat', key: 'status', width: 30 ,outlineLevel :1},
+                        { header: 'NB SMS', key: 'nbsms', width: 30 ,outlineLevel :1},
+                        { header: 'Date Envoi', key: 'dateEnvoi', width: 30,outlineLevel :1 },
+                        { header: 'Operateur', key: 'op', width: 30,outlineLevel :1 },
 
+                    ];
+                    recapEnvoi.map((e,i,arr)=>{
+                        sheet.addRow({type:e.type,to:e.to,exp:currentUser!.username,sms:e.message,status:e.isSent,nbsms:Math.round(e.message.length/160),dateEnvoi:e.dateEnvoi,op:e.provider});
+                    });
+                    if(currentUser!.username.includes('@')){
+                        //on envoi un mail si l'utilisateur une adresse mail
+                        let apiResult:any;
+                         apiResult=await request(process.env.GRAPHQL_API as string, getApiQuery());
+                        let filePath=`RAPPORT SMS ${typeSMS} du ${moment().format('DD-MM-YYYY')}.xlsx`;
+                        console.log("fichier genere "+filePath);
+                        //console.dir(apiResult);
+                        workbook.xlsx.writeFile(filePath).then(async () => {
+
+                            // envoi par mail
+                            let info = await transporter.sendMail({
+                               
+                                from: process.env.SENDERMAIL,
+                                to: currentUser!.username,
+                                cc: process.env.CCMAIL,
+                                bcc:process.env.BCCMAIL,
+                                subject: filePath,
+                                html: `<p>Bonjour cher utilisateur, <br/><br/>Veuillez trouver en pièce jointe le rapport de vos envois de sms effectués ce jour.<br/><br/>Le crédit actuel restant est de ${apiResult!.getCurrentApi!.unite} sms valide jusqu'au ${apiResult!.getCurrentApi!.dateFin.substring(0,10)}<br/><br/>${apiResult!.getCurrentApi!.unite<50000?'<b style="color:red;">Le stock de sms est bientot épuisé</b>':''} Cet email est auto généré.</p>`,
+                                attachments: [
+                                    {   // stream as an attachment
+                                        filename: filePath,
+                                        content: fs.createReadStream(filePath)
+                                    }
+                                ],
+                                onError: (e:any) => console.log(e),
+                                onSuccess: (i:any) => console.log(i)// html body
+                            });
+                           
+                            console.log("rapport envoye par mail");
+                            console.log('Message sent: %s', info.messageId);
+                            const path = `./${filePath}`;
+
+                            fs.unlink(path, (err:any) => {
+                            if (err) {
+                                console.error(err)
+                                return
+                            }
+                        });
+                    });         
+                    }
+                    //return results;
+                }
+                return r;
                }else{
                    //split the smslist into arrays of 500sms each and proceed with the sending
+                   let numberIndex=Math.ceil(smslist.length/500);
+                   let newSmsArray:any=[];
+                   for (let i=0;i<numberIndex;i++){
+                    if(i==0){
+                        newSmsArray.push(smslist.slice(0,500));
+                    }
+                    else{
+                        newSmsArray.push(smslist.slice(newSmsArray[0].length,(newSmsArray[0].length)+500));
+
+                    }
+                   }
+                   let r:any;
+                   newSmsArray.map(async(e:any,i:any)=>{
+                            console.log(`longueur du ${++i} tableau des sms symtel est ${e.length}\n`);
+                            //proceed with the sending
+                            //concatenation des numeros en chaine
+                            let numString=concatenateNumberSymtel(e);
+                            console.log("les sms symtel sont parti\n the number string is "+numString)
+                        await request(process.env.GRAPHQL_API as string, enCoursMutation(currentUser!.username,true));
+                         r=await traiTment(numString,"",ok,expeditor,typeSMS,userRepository,user,histoMutation,publisherMutation,smsapi,e.length-1,true,e,smslist[0].sms);
+                        //mail and report generation
+                        await request(process.env.GRAPHQL_API as string, enCoursMutation('',false));
+                        console.log("generation du rapport de mail");
+                        let recapEnvoi=await histoRepository.createQueryBuilder().where('"type" = :type AND "from"= :from AND CAST("dateEnvoi" AS DATE)= :date', { type:typeSMS,from:user.id,date:`%${moment().format("YYYY-MM-DD")}%` }).getMany();
+                        
+                        console.log(recapEnvoi.length);
+                        if(recapEnvoi.length>0){
+                        
+                            let workbook = new Excel.Workbook();
+                            workbook.creator = 'GESMS';
+                            workbook.lastModifiedBy = 'GESMS';
+                            workbook.created = new Date();
+                            workbook.modified = new Date();
+                            workbook.lastPrinted = new Date();
+                            workbook.properties.date1904 = true;
+                            let sheet = workbook.addWorksheet(`RAPPORT ${typeSMS}`);
+                            sheet.columns = [
+                                { header: 'Type Envoi', key: 'type', width: 30,outlineLevel :1 },
+                                { header: 'Destinataire', key: 'to', width: 30 ,outlineLevel :1},
+                                { header: 'Expediteur', key: 'exp', width: 30 ,outlineLevel :1},
+                                { header: 'sms', key: 'sms', width: 30 ,outlineLevel :1},
+                                { header: 'Etat', key: 'status', width: 30 ,outlineLevel :1},
+                                { header: 'NB SMS', key: 'nbsms', width: 30 ,outlineLevel :1},
+                                { header: 'Date Envoi', key: 'dateEnvoi', width: 30,outlineLevel :1 },
+                                { header: 'Operateur', key: 'op', width: 30,outlineLevel :1 },
+
+                            ];
+                            recapEnvoi.map((e,i,arr)=>{
+                                sheet.addRow({type:e.type,to:e.to,exp:currentUser!.username,sms:e.message,status:e.isSent,nbsms:Math.round(e.message.length/160),dateEnvoi:e.dateEnvoi,op:e.provider});
+                            });
+                            if(currentUser!.username.includes('@')){
+                                //on envoi un mail si l'utilisateur une adresse mail
+                                let apiResult:any;
+                                apiResult=await request(process.env.GRAPHQL_API as string, getApiQuery());
+                                let filePath=`RAPPORT SMS ${typeSMS} du ${moment().format('DD-MM-YYYY')}.xlsx`;
+                                console.log("fichier genere "+filePath);
+                                //console.dir(apiResult);
+                                workbook.xlsx.writeFile(filePath).then(async () => {
+
+                                    // envoi par mail
+                                    let info = await transporter.sendMail({
+                                    
+                                        from: process.env.SENDERMAIL,
+                                        to: currentUser!.username,
+                                        cc: process.env.CCMAIL,
+                                        bcc:process.env.BCCMAIL,
+                                        subject: filePath,
+                                        html: `<p>Bonjour cher utilisateur, <br/><br/>Veuillez trouver en pièce jointe le rapport de vos envois de sms effectués ce jour.<br/><br/>Le crédit actuel restant est de ${apiResult!.getCurrentApi!.unite} sms valide jusqu'au ${apiResult!.getCurrentApi!.dateFin.substring(0,10)}<br/><br/>${apiResult!.getCurrentApi!.unite<50000?'<b style="color:red;">Le stock de sms est bientot épuisé</b>':''} Cet email est auto généré.</p>`,
+                                        attachments: [
+                                            {   // stream as an attachment
+                                                filename: filePath,
+                                                content: fs.createReadStream(filePath)
+                                            }
+                                        ],
+                                        onError: (e:any) => console.log(e),
+                                        onSuccess: (i:any) => console.log(i)// html body
+                                    });
+                                
+                                    console.log("rapport envoye par mail");
+                                    console.log('Message sent: %s', info.messageId);
+                                    const path = `./${filePath}`;
+
+                                    fs.unlink(path, (err:any) => {
+                                    if (err) {
+                                        console.error(err)
+                                        return
+                                    }
+                                });
+                            });         
+                            }
+                            //return results;
+                        }
+                   })
+                   console.log("sms are more than 500");
+                   return r;
                }
 
            }
@@ -294,7 +461,10 @@ async function traiTment(e:any,i:any,ok:any,expeditor:any,typeSMS:any,userReposi
                 //if res != of all errors
                 if(res!="INTERNAL SERVER ERROR" && res!="AUTHENTICATION FAILED" && res!="SEND SMS DENIED" && res!="FROM DENIED"){
                     let resArr:any;
-                    resArr=parseSymtelResponse(res);
+                    console.dir(res.data)
+                    resArr=parseSymtelResponse(res.data);
+                    console.log("tableau des numero issu du split symtel:\n");
+                    console.dir(resArr);
                     //archivage in the db
                     resArr.forEach((e:any) => {
                         ok= new Promise(async(resolve,reject)=>{

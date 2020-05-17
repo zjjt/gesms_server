@@ -130,7 +130,7 @@
 }, {
     "name": "testSmsAuto",
     "type": "postgres",
-    "host": "192.168.99.111",
+    "host": "postgresql",
     "port": 5432,
     "username": "postgres",
     "password": "",

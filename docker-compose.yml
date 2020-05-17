@@ -30,12 +30,13 @@ services:
       - MTN_PASSWORD=Password001
       - SYMTEL_USERNAME=NSIA Vie CI
       - SYMTEL_PASSWORD=N51@v132020
+      - SYMTEL_DEACTIVATE_500=no
       - ORANGE_APPID=ImGfFSGNIu9SwyAU
       - ORANGE_SECRET=J8hqi9Yb4fw7kReF
       - ORANGE_CLIENTID=CjAzMAEnilRAbGRJRBgRcDoMNUld918x
       - ORANGE_SENDER=59367811
       - ORANGE_AUTH=Basic Q2pBek1BRW5pbFJBYkdSSlJCZ1JjRG9NTlVsZDkxOHg6SjhocWk5WWI0Znc3a1JlRg==
-      - GRAPHQL_API=http://192.168.99.113:97/graphql
+      - GRAPHQL_API=http://192.168.8.104:97/graphql
       - ANNIVHOUR="19 14 * * *"
       - SENDERMAIL="thibaut.zehi@groupensia.com"
       #- CCMAIL=""

@@ -1,7 +1,7 @@
+//import { HistoSMS } from "../entity/smsauto/HistoSMS";
+import { request } from 'graphql-request';
 import { getConnection } from "typeorm";
 import { SmsProvider } from "../entity/smsauto/SmsProvider";
-//import { HistoSMS } from "../entity/smsauto/HistoSMS";
-import {request} from 'graphql-request';
 const moment = require("moment");
 //import * as qs from 'qs';
 
@@ -71,9 +71,11 @@ export const smsSymtel=async(numbers:string,numArray:any,sms:string,from:string,
     try{
         console.log("---------------------||SYMTEL API||----------------------");
         //console.log(dbtoken.token);
-        result = await axios.get(`https://mmg3.symtel.biz:8443/AMMG/SymtelMMG?username=${process.env.SYMTEL_USERNAME}&passw
-        ord=${process.env.SYMTEL_PASSWORD}&from=${from}&to=${numbers}&dlrmask=31&text=${sms}
-        `);
+        const https=require("https");
+        const agent=new https.Agent({
+            rejectUnauthorized:false
+        });
+        result = await axios.get(`https://mmg3.symtel.biz:8443/AMMG/SymtelMMG?username=${process.env.SYMTEL_USERNAME}&password=${process.env.SYMTEL_PASSWORD}&from=${from}&to=${numbers}&dlrmask=31&text=${sms}`,{httpsAgent:agent});
     }catch(err){
         console.error("Une erreur critique a eu lieu lors de l'envoi");
         numArray.map(async(e:any,i:any)=>{
