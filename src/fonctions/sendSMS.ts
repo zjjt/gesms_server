@@ -259,15 +259,16 @@ export const sendSMS = async(typeSMS : string, text
 
                     }
                    }
-                   let r:any;
-                   newSmsArray.map(async(e:any,i:any)=>{
+                   let r;
+                   r=newSmsArray.map(async(e:any,i:any)=>{
+                       let o;
                             console.log(`longueur du ${++i} tableau des sms symtel est ${e.length}\n`);
                             //proceed with the sending
                             //concatenation des numeros en chaine
                             let numString=concatenateNumberSymtel(e);
                             console.log("les sms symtel sont parti\n the number string is "+numString)
                         await request(process.env.GRAPHQL_API as string, enCoursMutation(currentUser!.username,true));
-                         r=await traiTment(numString,"",ok,expeditor,typeSMS,userRepository,user,histoMutation,publisherMutation,smsapi,e.length-1,true,e,smslist[0].sms);
+                         o=await traiTment(numString,"",ok,expeditor,typeSMS,userRepository,user,histoMutation,publisherMutation,smsapi,e.length-1,true,e,smslist[0].sms);
                         //mail and report generation
                         await request(process.env.GRAPHQL_API as string, enCoursMutation('',false));
                         console.log("generation du rapport de mail");
@@ -344,7 +345,7 @@ export const sendSMS = async(typeSMS : string, text
                    console.log("sms are more than 500");
                    return r;
                }
-
+               return true;
            }
            ok=await smslist.map(async (e,i)=>{
               //await wait(waitInterval);
@@ -476,7 +477,7 @@ async function traiTment(e:any,i:any,ok:any,expeditor:any,typeSMS:any,userReposi
                                 to: e.number,
                                 provider:smsapi.provider,
                                 transactionId: e.status,
-                                isSent: e.status=="0: Accepted for delivery"||e.status=="3: Queued for later delivery"?true:false
+                                isSent: true
                             };
                            await request(process.env.GRAPHQL_API as string, histoMutation(args.type, args.appId, args.qui, args.message, args.to, args.provider,args.transactionId, args.isSent));
                            const doPub=await request(process.env.GRAPHQL_API as string,publisherMutation(`envoi au ${e.number} effectué`));
